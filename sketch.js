@@ -32,13 +32,49 @@ let circleX = 320;
 let circleY = 240;
 const circleR = 50; // 半徑=50，直徑=100
 
+// 軌跡陣列
+let indexPath = []; // 食指紅色軌跡
+let thumbPath = []; // 大拇指綠色軌跡
+
+// 狀態記錄
+let isIndexMoving = false;
+let isThumbMoving = false;
+
 function draw() {
   image(video, 0, 0);
+
+  // 畫出紅色食指軌跡
+  stroke(255, 0, 0);
+  strokeWeight(4);
+  noFill();
+  if (indexPath.length > 1) {
+    beginShape();
+    for (let pt of indexPath) {
+      vertex(pt.x, pt.y);
+    }
+    endShape();
+  }
+
+  // 畫出綠色大拇指軌跡
+  stroke(0, 255, 0);
+  strokeWeight(4);
+  noFill();
+  if (thumbPath.length > 1) {
+    beginShape();
+    for (let pt of thumbPath) {
+      vertex(pt.x, pt.y);
+    }
+    endShape();
+  }
 
   // 畫出中間的圓
   fill(0, 200, 255, 120);
   noStroke();
   circle(circleX, circleY, circleR * 2);
+
+  // 預設為未移動
+  let indexMoved = false;
+  let thumbMoved = false;
 
   // Ensure at least one hand is detected
   if (hands.length > 0) {
@@ -73,28 +109,46 @@ function draw() {
         // 畫出每個關鍵點
         for (let i = 0; i < hand.keypoints.length; i++) {
           let keypoint = hand.keypoints[i];
-
-          // Color-code based on left or right hand
           if (hand.handedness == "Left") {
             fill(255, 0, 255);
           } else {
             fill(255, 255, 0);
           }
-
           noStroke();
           circle(keypoint.x, keypoint.y, 16);
         }
 
-        // 取得食指指尖(keypoints[8])
+        // 取得食指指尖(keypoints[8])與大拇指指尖(keypoints[4])
         let indexTip = hand.keypoints[8];
+        let thumbTip = hand.keypoints[4];
+
         // 判斷食指是否碰到圓
-        let d = dist(indexTip.x, indexTip.y, circleX, circleY);
-        if (d < circleR) {
-          // 若碰到，圓心跟著食指移動
+        let dIndex = dist(indexTip.x, indexTip.y, circleX, circleY);
+        if (dIndex < circleR) {
           circleX = indexTip.x;
           circleY = indexTip.y;
+          indexMoved = true;
+          indexPath.push({ x: circleX, y: circleY });
+        }
+
+        // 判斷大拇指是否碰到圓
+        let dThumb = dist(thumbTip.x, thumbTip.y, circleX, circleY);
+        if (dThumb < circleR) {
+          circleX = thumbTip.x;
+          circleY = thumbTip.y;
+          thumbMoved = true;
+          thumbPath.push({ x: circleX, y: circleY });
         }
       }
     }
+  }
+
+  // 若食指沒碰到圓，清空食指軌跡
+  if (!indexMoved) {
+    indexPath = [];
+  }
+  // 若大拇指沒碰到圓，清空大拇指軌跡
+  if (!thumbMoved) {
+    thumbPath = [];
   }
 }
