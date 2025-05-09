@@ -33,35 +33,70 @@ let circleY = 240;
 const circleR = 50; // 半徑=50，直徑=100
 
 // 軌跡陣列
-let indexPath = []; // 食指紅色軌跡
-let thumbPath = []; // 大拇指綠色軌跡
-
-// 狀態記錄
-let isIndexMoving = false;
-let isThumbMoving = false;
+let leftIndexPath = [];   // 左手食指紅色
+let rightIndexPath = [];  // 右手食指黃色
+let leftThumbPath = [];   // 左手大拇指綠色
+let rightThumbPath = [];  // 右手大拇指青色
+let circlePath = [];      // 圓心軌跡（紅色）
 
 function draw() {
   image(video, 0, 0);
 
-  // 畫出紅色食指軌跡
-  stroke(255, 0, 0);
-  strokeWeight(4);
-  noFill();
-  if (indexPath.length > 1) {
+  // 畫出圓心軌跡（紅色線）
+  if (circlePath.length > 1) {
+    stroke(255, 0, 0);
+    strokeWeight(3);
+    noFill();
     beginShape();
-    for (let pt of indexPath) {
+    for (let pt of circlePath) {
       vertex(pt.x, pt.y);
     }
     endShape();
   }
 
-  // 畫出綠色大拇指軌跡
-  stroke(0, 255, 0);
-  strokeWeight(4);
-  noFill();
-  if (thumbPath.length > 1) {
+  // 畫出左手食指紅色軌跡
+  if (leftIndexPath.length > 1) {
+    stroke(255, 0, 0);
+    strokeWeight(4);
+    noFill();
     beginShape();
-    for (let pt of thumbPath) {
+    for (let pt of leftIndexPath) {
+      vertex(pt.x, pt.y);
+    }
+    endShape();
+  }
+
+  // 畫出右手食指黃色軌跡
+  if (rightIndexPath.length > 1) {
+    stroke(255, 255, 0);
+    strokeWeight(4);
+    noFill();
+    beginShape();
+    for (let pt of rightIndexPath) {
+      vertex(pt.x, pt.y);
+    }
+    endShape();
+  }
+
+  // 畫出左手大拇指綠色軌跡
+  if (leftThumbPath.length > 1) {
+    stroke(0, 255, 0);
+    strokeWeight(4);
+    noFill();
+    beginShape();
+    for (let pt of leftThumbPath) {
+      vertex(pt.x, pt.y);
+    }
+    endShape();
+  }
+
+  // 畫出右手大拇指青色軌跡
+  if (rightThumbPath.length > 1) {
+    stroke(0, 255, 255);
+    strokeWeight(4);
+    noFill();
+    beginShape();
+    for (let pt of rightThumbPath) {
       vertex(pt.x, pt.y);
     }
     endShape();
@@ -72,11 +107,14 @@ function draw() {
   noStroke();
   circle(circleX, circleY, circleR * 2);
 
-  // 預設為未移動
-  let indexMoved = false;
-  let thumbMoved = false;
+  // 狀態記錄
+  let leftIndexMoved = false;
+  let rightIndexMoved = false;
+  let leftThumbMoved = false;
+  let rightThumbMoved = false;
+  let circleMoved = false;
 
-  // Ensure at least one hand is detected
+  // 手指控制圓的移動
   if (hands.length > 0) {
     for (let hand of hands) {
       if (hand.confidence > 0.1) {
@@ -124,31 +162,60 @@ function draw() {
 
         // 判斷食指是否碰到圓
         let dIndex = dist(indexTip.x, indexTip.y, circleX, circleY);
-        if (dIndex < circleR) {
-          circleX = indexTip.x;
-          circleY = indexTip.y;
-          indexMoved = true;
-          indexPath.push({ x: circleX, y: circleY });
-        }
-
         // 判斷大拇指是否碰到圓
         let dThumb = dist(thumbTip.x, thumbTip.y, circleX, circleY);
-        if (dThumb < circleR) {
+
+        // 判斷是否同時碰到圓
+        let tolerance = 18;
+        if (abs(dIndex - circleR) < tolerance && abs(dThumb - circleR) < tolerance) {
+          // 兩指同時夾住圓，圓心移到兩指中點
+          circleX = (indexTip.x + thumbTip.x) / 2;
+          circleY = (indexTip.y + thumbTip.y) / 2;
+          circleMoved = true;
+          circlePath.push({ x: circleX, y: circleY });
+        } else if (dIndex < circleR) {
+          // 食指單獨控制圓
+          circleX = indexTip.x;
+          circleY = indexTip.y;
+          circleMoved = true;
+          circlePath.push({ x: circleX, y: circleY });
+        } else if (dThumb < circleR) {
+          // 大拇指單獨控制圓
           circleX = thumbTip.x;
           circleY = thumbTip.y;
-          thumbMoved = true;
-          thumbPath.push({ x: circleX, y: circleY });
+          circleMoved = true;
+          circlePath.push({ x: circleX, y: circleY });
+        }
+
+        // 食指軌跡
+        if (dIndex < circleR) {
+          if (hand.handedness == "Left") {
+            leftIndexMoved = true;
+            leftIndexPath.push({ x: indexTip.x, y: indexTip.y });
+          } else {
+            rightIndexMoved = true;
+            rightIndexPath.push({ x: indexTip.x, y: indexTip.y });
+          }
+        }
+
+        // 大拇指軌跡
+        if (dThumb < circleR) {
+          if (hand.handedness == "Left") {
+            leftThumbMoved = true;
+            leftThumbPath.push({ x: thumbTip.x, y: thumbTip.y });
+          } else {
+            rightThumbMoved = true;
+            rightThumbPath.push({ x: thumbTip.x, y: thumbTip.y });
+          }
         }
       }
     }
   }
 
-  // 若食指沒碰到圓，清空食指軌跡
-  if (!indexMoved) {
-    indexPath = [];
-  }
-  // 若大拇指沒碰到圓，清空大拇指軌跡
-  if (!thumbMoved) {
-    thumbPath = [];
-  }
+  // 離開圓就清空軌跡（只保留畫面上已畫的線）
+  if (!leftIndexMoved) leftIndexPath = [];
+  if (!rightIndexMoved) rightIndexPath = [];
+  if (!leftThumbMoved) leftThumbPath = [];
+  if (!rightThumbMoved) rightThumbPath = [];
+  if (!circleMoved) circlePath = [];
 }
