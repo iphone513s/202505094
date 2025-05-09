@@ -162,57 +162,49 @@ function draw() {
 
         // 判斷食指是否碰到圓
         let dIndex = dist(indexTip.x, indexTip.y, circleX, circleY);
-        // 判斷大拇指是否碰到圓
+        // 判斷大拇指是否碰到圓 
         let dThumb = dist(thumbTip.x, thumbTip.y, circleX, circleY);
 
-        // 判斷是否同時碰到圓
-        let tolerance = 18;
-        if (abs(dIndex - circleR) < tolerance && abs(dThumb - circleR) < tolerance) {
-          // 兩指同時夾住圓，圓心移到兩指中點
-          circleX = (indexTip.x + thumbTip.x) / 2;
-          circleY = (indexTip.y + thumbTip.y) / 2;
-          circleMoved = true;
-          circlePath.push({ x: circleX, y: circleY });
-        } else if (dIndex < circleR) {
-          // 食指單獨控制圓
+        // 食指控制圓的移動
+        if (dIndex < circleR) {
+          // 圓跟隨食指移動
           circleX = indexTip.x;
           circleY = indexTip.y;
           circleMoved = true;
           circlePath.push({ x: circleX, y: circleY });
-        } else if (dThumb < circleR) {
-          // 大拇指單獨控制圓
-          circleX = thumbTip.x;
-          circleY = thumbTip.y;
-          circleMoved = true;
-          circlePath.push({ x: circleX, y: circleY });
-        }
 
-        // 食指軌跡
-        if (dIndex < circleR) {
+          // 記錄食指軌跡
           if (hand.handedness == "Left") {
             leftIndexMoved = true;
             leftIndexPath.push({ x: indexTip.x, y: indexTip.y });
           } else {
-            rightIndexMoved = true;
+            rightIndexMoved = true; 
             rightIndexPath.push({ x: indexTip.x, y: indexTip.y });
           }
         }
 
-        // 大拇指軌跡
+        // 大拇指控制圓的移動
         if (dThumb < circleR) {
+          // 圓跟隨大拇指移動
+          circleX = thumbTip.x;
+          circleY = thumbTip.y;
+          circleMoved = true;
+          circlePath.push({ x: circleX, y: circleY });
+
+          // 記錄大拇指軌跡
           if (hand.handedness == "Left") {
             leftThumbMoved = true;
             leftThumbPath.push({ x: thumbTip.x, y: thumbTip.y });
           } else {
             rightThumbMoved = true;
-            rightThumbPath.push({ x: thumbTip.x, y: thumbTip.y });
+            rightThumbPath.push({ x: thumbTip.x, y: thumbTip.y }); 
           }
         }
       }
     }
   }
 
-  // 離開圓就清空軌跡（只保留畫面上已畫的線）
+  // 離開圓就清空對應軌跡
   if (!leftIndexMoved) leftIndexPath = [];
   if (!rightIndexMoved) rightIndexPath = [];
   if (!leftThumbMoved) leftThumbPath = [];
